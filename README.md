@@ -16,7 +16,7 @@ If you'd like to build the image yourself then:
 ```bash
 $ git clone https://github.com/eugeneware/docker-wordpress-nginx.git
 $ cd docker-wordpress-nginx
-$ sudo docker build -t="rija/docker-wordpress-nginx" .
+$ docker build -t="rija/docker-wordpress-nginx" .
 ```
 
 ## Usage
@@ -39,9 +39,12 @@ $ docker run --name mysql --volumes-from mysql-data -e MYSQL_ROOT_PASSWORD=<root
 After starting the docker-wordpress-nginx check to see if it started and the port mapping is correct.  This will also report the port mapping between the docker container and the host machine.
 
 ```
-$ sudo docker ps
+$ docker ps
 
-0.0.0.0:80 -> 80/tcp docker-wordpress-nginx
+CONTAINER ID        IMAGE                           COMMAND                CREATED             STATUS              PORTS                NAMES
+e1afad973636        docker-wordpress-nginx:latest   "/bin/bash /start.sh   25 minutes ago      Up 25 minutes       0.0.0.0:80->80/tcp   wordpress-server    
+5ef15c984107        mysql:5.5.42                    "/entrypoint.sh mysq   37 minutes ago      Up 37 minutes       3306/tcp             mysql-server        
+
 ```
 
 You can then visit the following URL in a browser on your host machine to get started:
