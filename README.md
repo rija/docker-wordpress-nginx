@@ -24,13 +24,15 @@ $ sudo docker build -t="rija/docker-wordpress-nginx" .
 To spawn a new instance of wordpress on port 80.  The -p 80:80 maps the internal docker port 80 to the outside port 80 of the host machine.
 
 ```bash
-$ docker run --name wordpress  -d -p 80:80 --link mysql:db docker-wordpress-nginx
+$ docker create --name wp-content -v /usr/share/nginx/www/wp-content docker-wordpress-nginx
+$ docker run --name wordpress-server --volumes-from wp-content -d -p 80:80 --link mysql-server:db docker-wordpress-nginx
 ```
 
 You will need to have started a Mysql container before hand:
 
 ```bash
-$ docker run --name mysql -e MYSQL_ROOT_PASSWORD=<root password> -e MYSQL_DATABASE=wordpress -e MYSQL_USER=<user name> -e MYSQL_PASSWORD=<user password> -d mysql:5.5.42
+$ docker create --name mysql-data -v /var/lib/mysql mysql:5.5.42
+$ docker run --name mysql --volumes-from mysql-data -e MYSQL_ROOT_PASSWORD=<root password> -e MYSQL_DATABASE=wordpress -e MYSQL_USER=<user name> -e MYSQL_PASSWORD=<user password> -d mysql:5.5.42
 ```
 
 
