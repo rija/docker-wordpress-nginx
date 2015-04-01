@@ -1,48 +1,56 @@
 # docker-wordpress-nginx
 
 
-This is a fork of eugeneware's Dockerfile for Wordpress.
+This is a fork of [eugeneware's Dockerfile for Wordpress](https://github.com/eugeneware/docker-wordpress-nginx).
 
-My plan is to allow the use of linked containers for Mysql and data volumes.
+My plan is to allow the use of linked and data volume containers and to make it easy for upgrades and backups.
 
-Currently you can link to another Mysql container.
+Currently you can link to another Mysql container and use data volume containers.
 
 
 ## Installation
 
+Assuming you already have a mysql container named *mysql-server* running, you can pull the image directly from docker hub and run it with the following command:
+
+```bash
+$ docker run --name wordpress -d -p 80:80 --link mysql-server:db rija/wordpress-nginx-no-mysql
+
+```
 
 If you'd like to build the image yourself then:
 
 ```bash
 $ git clone https://github.com/rija/docker-wordpress-nginx.git
 $ cd docker-wordpress-nginx
-$ docker build -t="docker-wordpress-nginx" .
+$ docker build -t="wordpress-nginx-no-mysql" .
 ```
 
 ## Usage
 
 To spawn a new instance of wordpress on port 80.  The -p 80:80 maps the internal docker port 80 to the outside port 80 of the host machine.
 
+The example also use a data volume container to keep the *wp-content* user data folder insulated from future upgrades of the wordpress container.
+
 ```bash
-$ docker create --name wp-content -v /usr/share/nginx/www/wp-content docker-wordpress-nginx
-$ docker run --name wordpress-server --volumes-from wp-content -d -p 80:80 --link mysql-server:db docker-wordpress-nginx
+$ docker create --name wp-content -v /usr/share/nginx/www/wp-content rija/wordpress-nginx-no-mysql
+$ docker run --name wordpress-server --volumes-from wp-content -d -p 80:80 --link mysql-server:db rija/wordpress-nginx-no-mysql
 ```
 
-You will need to have started a Mysql container before hand:
+You will need to have started a Mysql container beforehand:
 
 ```bash
 $ docker create --name mysql-data -v /var/lib/mysql mysql:5.5.42
-$ docker run --name mysql --volumes-from mysql-data -e MYSQL_ROOT_PASSWORD=<root password> -e MYSQL_DATABASE=wordpress -e MYSQL_USER=<user name> -e MYSQL_PASSWORD=<user password> -d mysql:5.5.42
+$ docker run --name mysql-server --volumes-from mysql-data -e MYSQL_ROOT_PASSWORD=<root password> -e MYSQL_DATABASE=wordpress -e MYSQL_USER=<user name> -e MYSQL_PASSWORD=<user password> -d mysql:5.5.42
 ```
 
 
-After starting the docker-wordpress-nginx check to see if it started and the port mapping is correct.  This will also report the port mapping between the docker container and the host machine.
+After starting the containers check to see if it started and the port mapping is correct.  This will also report the port mapping between the docker container and the host machine.
 
 ```
 $ docker ps
 
 CONTAINER ID        IMAGE                           COMMAND                CREATED             STATUS              PORTS                NAMES
-e1afad973636        docker-wordpress-nginx:latest   "/bin/bash /start.sh   25 minutes ago      Up 25 minutes       0.0.0.0:80->80/tcp   wordpress-server    
+e1afad973636        wordpress-nginx-no-mysql:latest   "/bin/bash /start.sh   25 minutes ago      Up 25 minutes       0.0.0.0:80->80/tcp   wordpress-server    
 5ef15c984107        mysql:5.5.42                    "/entrypoint.sh mysq   37 minutes ago      Up 37 minutes       3306/tcp             mysql-server        
 
 ```
