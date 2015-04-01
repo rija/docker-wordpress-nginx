@@ -14,9 +14,9 @@ Currently you can link to another Mysql container.
 If you'd like to build the image yourself then:
 
 ```bash
-$ git clone https://github.com/eugeneware/docker-wordpress-nginx.git
+$ git clone https://github.com/rija/docker-wordpress-nginx.git
 $ cd docker-wordpress-nginx
-$ docker build -t="rija/docker-wordpress-nginx" .
+$ docker build -t="docker-wordpress-nginx" .
 ```
 
 ## Usage
