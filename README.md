@@ -66,3 +66,9 @@ If you want to backup the content of Wordpress' wp-content folder you can use th
 ```bash
 $ docker run --rm --volumes-from wp-content -v $(pwd):/backup docker-wordpress-nginx tar cvf /backup/backup.tar /usr/share/nginx/www/wp-content
 ```
+
+To access the file system for the wordpress content, you will use the following command;
+
+```bash
+$ docker run --rm  --volumes-from wp-content -it rija/wordpress-nginx-no-mysql  /bin/bash
+```
