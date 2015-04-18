@@ -72,3 +72,41 @@ To access the file system for the wordpress content, you will use the following 
 ```bash
 $ docker run --rm  --volumes-from wp-content -it rija/wordpress-nginx-no-mysql  /bin/bash
 ```
+
+To make a manual connection to the mysql database, you make a shell connection to ephemeral container that's linked to the mysql database container:
+
+```bash
+docker run --rm --link mysql-server:wdb -it rija/wordpress-nginx-no-mysql  bash
+```
+
+From there you can get access to the database connection strings and connect to the mysql using the command line client:
+
+```bash
+$ env
+
+HOSTNAME=8112dabbc654
+WDB_ENV_MYSQL_DATABASE=wordpress
+TERM=xterm
+...
+WDB_PORT=tcp://172.17.0.2:3306
+WDB_ENV_MYSQL_USER=wordpress
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+WDB_ENV_MYSQL_ROOT_PASSWORD=therootpassword
+PWD=/
+WDB_PORT_3306_TCP_ADDR=172.17.0.2
+WDB_PORT_3306_TCP=tcp://172.17.0.2:3306
+WDB_NAME=/kickass_heisenberg/wdb
+WDB_PORT_3306_TCP_PROTO=tcp
+WDB_ENV_MYSQL_MAJOR=5.5
+SHLVL=1
+HOME=/root
+WDB_ENV_MYSQL_VERSION=5.5.42
+DEBIAN_FRONTEND=noninteractive
+LESSOPEN=| /usr/bin/lesspipe %s
+WDB_ENV_MYSQL_PASSWORD=wordpress
+LESSCLOSE=/usr/bin/lesspipe %s %s
+WDB_PORT_3306_TCP_PORT=3306
+
+$ mysql -h $WDB_PORT_3306_TCP_ADDR -u $WDB_ENV_MYSQL_USER -p $WDB_ENV_MYSQL_DATABASE
+
+```
