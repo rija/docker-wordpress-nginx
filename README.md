@@ -110,3 +110,67 @@ WDB_PORT_3306_TCP_PORT=3306
 $ mysql -h $WDB_PORT_3306_TCP_ADDR -u $WDB_ENV_MYSQL_USER -p $WDB_ENV_MYSQL_DATABASE
 
 ```
+
+
+## Migrating Data Volume Containers across hosts
+
+The scenario is as follow:
+You have deployed Wordpress on a laptop following the instructions above
+You have created content (published blog posts, installed theme and plugins)
+
+Now you want to deploy the whole thing on a test server for your client to see.
+
+
+How do you do that?
+
+Below is how you do it for wp-content Data Volume Container. It works the same for mysql-data Volume Container. 
+
+On your laptop:
+
+```bash
+$ docker ps -a
+
+cdb4f596dcc5        rija/wordpress-nginx-no-mysql:latest   "/bin/bash /start.sh   2 days ago          Up 2 days           0.0.0.0:80->80/tcp   wordpress-server    
+076f0ab9098e        mysql:5.5.42                           "/entrypoint.sh mysq   2 weeks ago         Up 2 days           3306/tcp             mysql-server        
+root@hkims-test:~# docker ps -a
+CONTAINER ID        IMAGE                                  COMMAND                CREATED             STATUS                     PORTS                NAMES
+cdb4f596dcc5        rija/wordpress-nginx-no-mysql:latest   "/bin/bash /start.sh   2 days ago          Up 2 days                  0.0.0.0:80->80/tcp   wordpress-server         
+d5fe2b4f8cee        rija/wordpress-nginx-no-mysql:latest   "/bin/bash /start.sh   2 weeks ago                                                         wp-content               
+076f0ab9098e        mysql:5.5.42                           "/entrypoint.sh mysq   2 weeks ago         Up 2 days                  3306/tcp             mysql-server             
+6dec6ae9b207        mysql:5.5.42                           "/entrypoint.sh mysq   2 weeks ago                                                         mysql-data               
+
+
+
+$ docker commit -m "wp-content data" d5fe2b4f8cee wp-content-data
+
+
+4f177bd27a9ff0f6dc2a830403925b5360bfe0b93d476f7fc3231110e7f71b1c
+
+$ docker images
+
+REPOSITORY                      TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+wp-content-data                 latest              68e2ee6c238f        4 seconds ago       521.1 MB
+rija/wordpress-nginx-no-mysql   latest              efa65bbde74c        2 weeks ago         521.1 MB
+<none>                          <none>              f02e3c203c86        2 weeks ago         521 MB
+<none>                          <none>              2b486da790be        2 weeks ago         521.1 MB
+docker-wordpress-nginx          latest              1dbcd3deaab9        2 weeks ago         521 MB
+
+
+$ docker save -o /tmp/wp-content-data.tar 68e2ee6c238f
+
+```
+
+Then you copy the tar image to the server you want to deploy 
+
+and run the following command
+
+```bash
+
+docker load -i ~/wp-content-data.tar
+
+docker create --name wp-content -v /usr/share/nginx/www/wp-content wp-content-data
+
+
+```
+
+Once you've done this for the mysql database as well, you can run (with docker run) the wordpress and mysql containers as described in the Usage section
