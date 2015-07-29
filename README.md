@@ -123,54 +123,76 @@ Now you want to deploy the whole thing on a test server for your client to see.
 
 How do you do that?
 
-Below is how you do it for wp-content Data Volume Container. It works the same for mysql-data Volume Container. 
-
-On your laptop:
+On the origin host:
 
 ```bash
-$ docker ps -a
-
-cdb4f596dcc5        rija/wordpress-nginx-no-mysql:latest   "/bin/bash /start.sh   2 days ago          Up 2 days           0.0.0.0:80->80/tcp   wordpress-server    
-076f0ab9098e        mysql:5.5.42                           "/entrypoint.sh mysq   2 weeks ago         Up 2 days           3306/tcp             mysql-server        
-root@hkims-test:~# docker ps -a
-CONTAINER ID        IMAGE                                  COMMAND                CREATED             STATUS                     PORTS                NAMES
-cdb4f596dcc5        rija/wordpress-nginx-no-mysql:latest   "/bin/bash /start.sh   2 days ago          Up 2 days                  0.0.0.0:80->80/tcp   wordpress-server         
-d5fe2b4f8cee        rija/wordpress-nginx-no-mysql:latest   "/bin/bash /start.sh   2 weeks ago                                                         wp-content               
-076f0ab9098e        mysql:5.5.42                           "/entrypoint.sh mysq   2 weeks ago         Up 2 days                  3306/tcp             mysql-server             
-6dec6ae9b207        mysql:5.5.42                           "/entrypoint.sh mysq   2 weeks ago                                                         mysql-data               
-
-
-
-$ docker commit -m "wp-content data" d5fe2b4f8cee wp-content-data
-
-
-4f177bd27a9ff0f6dc2a830403925b5360bfe0b93d476f7fc3231110e7f71b1c
-
-$ docker images
-
-REPOSITORY                      TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
-wp-content-data                 latest              68e2ee6c238f        4 seconds ago       521.1 MB
-rija/wordpress-nginx-no-mysql   latest              efa65bbde74c        2 weeks ago         521.1 MB
-<none>                          <none>              f02e3c203c86        2 weeks ago         521 MB
-<none>                          <none>              2b486da790be        2 weeks ago         521.1 MB
-docker-wordpress-nginx          latest              1dbcd3deaab9        2 weeks ago         521 MB
-
-
-$ docker save -o /tmp/wp-content-data.tar 68e2ee6c238f
+  docker ps -a
+  docker run --volumes-from wp-content -v $(pwd):/backup rija/wordpress-nginx-no-mysql:v2 tar cvf /backup/wp-content.tar /usr/share/nginx/www/wp-content
+  tar -tf wp-content.tar 
 
 ```
 
-Then you copy the tar image to the server you want to deploy 
-
-and run the following command
+Then copy wp-content.tar to the new host. 
+On the destination host (make sure your run these commands in the same directory where wp-content.tar is):
 
 ```bash
+  docker create --name newsite-wp-content -v /usr/share/nginx/www/wp-content rija/wordpress-nginx-no-mysql:v2
+  docker run --volumes-from newsite-wp-content -v $(pwd):/backup rija/wordpress-nginx-no-mysql:v2 bash -c 'cd / && tar xvf /backup/wp-content.tar'
 
-docker load -i ~/wp-content-data.tar
+```
 
-docker create --name wp-content -v /usr/share/nginx/www/wp-content wp-content-data
+You can verify that the files have been restored by opening a shell on the new volume data container:
+
+```bash
+  docker run --volumes-from newsite-wp-content -it rija/wordpress-nginx-no-mysql:v2 bash
+```
+
+You can do something similar with mysql data.
+
+on your laptop, inside the docker container that can connect to the mysql server:
+
+```bash
+$ docker exec -it wordpress-server bash
+
+$ mysqldump -h $DB_PORT_3306_TCP_ADDR -u $DB_ENV_MYSQL_USER -p $DB_ENV_MYSQL_DATABASE > $DB_ENV_MYSQL_DATABASE.sql
+
+tar -cvzf wordpress-db.tar.gz wordpress.sql
 
 
 ```
 
-Once you've done this for the mysql database as well, you can run (with docker run) the wordpress and mysql containers as described in the Usage section
+on the host system on your laptop:
+
+```bash
+
+$ docker cp wordpress-server:/worldpress-db.tar.gz /tmp/
+
+$ scp /tmp/* <test server connection details>
+```
+
+on test server:
+
+```bash
+$ docker run --rm -v ${PWD}:/tmp --volumes-from mysql-data -it mysql:5.5.42 bash
+
+$ cp /tmp/wordpress-db.tar.gz /var/lib/mysql/
+
+```
+
+open a shell into a container that has the database connection details in ENV
+
+```bash
+
+$ docker exec -it mysql-server bash
+
+$ tar xzvf /var/lib/mysql/wordpress-db.tar.gz
+
+$ mysql -u $MYSQL_USER -p $MYSQL_DATABASE < wordpress.sql
+
+```
+
+
+you may have to update wp-config.php with a RELOCATE flag:
+```
+define('RELOCATE',true);
+```
